@@ -34,15 +34,6 @@ public class NioServiceInterceptor implements MethodInterceptor {
 
     @Override
     public Object intercept(Object o, Method method, Object[] objects, MethodProxy methodProxy) {
-        if (method.getName().equals("finalize")) {
-            Object result = null;
-            try {
-                result = methodProxy.invokeSuper(o, objects);
-            } catch (Throwable throwable) {
-                throwable.printStackTrace();
-            }
-            return result;
-        }
         Random random = new Random();
         int i = random.nextInt(routes.size());
         ServiceRoute serviceRoute = routes.get(i);

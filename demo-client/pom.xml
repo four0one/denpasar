@@ -25,7 +25,7 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>coom.chenwei</groupId>
+            <groupId>com.chenwei</groupId>
             <artifactId>demo-interface</artifactId>
             <version>1.0.0</version>
         </dependency>

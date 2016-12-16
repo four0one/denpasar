@@ -4,5 +4,5 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd"
        default-lazy-init="true">
 
-    <bean id="calculateService" class="com.chenwei.denpasar.spring.InterfaceProxyFactory" p:interfaceClass="com.chenwei.service.CalculateService"/>
+    <bean id="calculateService" class="com.plumeria.denpasar.client.InterfaceProxyFactory" p:interfaceClass="com.plumeria.service.CalculateService"/>
 </beans>

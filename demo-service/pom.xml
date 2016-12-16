@@ -48,7 +48,7 @@
                             <addClasspath>true</addClasspath>
                             <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                             <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
-                            <mainClass>com.chenwei.App</mainClass>
+                            <mainClass>com.plumeria.App</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

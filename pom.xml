@@ -10,6 +10,7 @@
         <module>demo-interface</module>
         <module>demo-service</module>
         <module>demo-client</module>
+        <module>search-api</module>
     </modules>
     <packaging>pom</packaging>
 
@@ -95,6 +96,12 @@
                 <groupId>com.alibaba</groupId>
                 <artifactId>fastjson</artifactId>
                 <version>1.2.5</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>4.3.4</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

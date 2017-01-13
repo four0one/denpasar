@@ -16,8 +16,8 @@ public class SearchMainApp {
 //        ApiConnector.postJson("http://192.168.54.131:9200/appstore/app/_search?pretty",
 //                JSONObject.toJSONString(compositeMatch()));
 
-        ApiConnector.postJson("http://192.168.54.131:9200/appstore/app/_search?pretty",
-                JSONObject.toJSONString(matchQuery()));
+//        ApiConnector.postJson("http://192.168.54.131:9200/appstore/app/_search?pretty",
+//                JSONObject.toJSONString(matchQuery()));
 
     }
 
@@ -38,12 +38,12 @@ public class SearchMainApp {
     private static DslObject compositeMatch() {
         /**
          * query_top
-         */
+        */
         QueryObject query = new QueryObject();
 
         /**
          * filtered
-         */
+        */
         FilteredObject filteredObject = new FilteredObject();
         FilterObject filterObject = new FilterObject();
         filterObject.createRange().addRange("score", 20, "gt");
@@ -51,7 +51,7 @@ public class SearchMainApp {
 
         /**
          * query_inline
-         */
+        */
         QueryObject queryInline = new QueryObject();
         queryInline.createMatch().addMatch("name", "全民");
         filteredObject.setQuery(queryInline);

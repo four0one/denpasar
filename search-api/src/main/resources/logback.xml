@@ -7,6 +7,24 @@
         </encoder>
     </appender>
 
+    <appender name="FILEOUT" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>/var/log/denpasar/search-api/goods.log</file>
+        <Encoding>UTF-8</Encoding>
+        <!--  -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>/var/log/denpasar/search-api%d{yyyy-MM-dd}.log</FileNamePattern>
+            <MaxHistory>30</MaxHistory>
+        </rollingPolicy>
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%msg%n</pattern>
+        </layout>
+    </appender>
+
+    <!-- 开发环境显示日志. -->
+    <logger name="suning" level="INFO" additivity="false">
+        <appender-ref ref="FILEOUT" />
+    </logger>
+
     <root level="DEBUG">
         <appender-ref ref="STDOUT" />
     </root>

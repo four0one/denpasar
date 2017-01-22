@@ -416,7 +416,7 @@ public final class ApiConnector {
 			}
 		}
 
-		logger.info("[HttpUtils Get] begin invoke:{}", sb.toString());
+//		logger.info("[HttpUtils Get] begin invoke:{}", sb.toString());
 		HttpGet get = new HttpGet(sb.toString());
 		get.setConfig(requestConfig);
 

@@ -7,11 +7,11 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by chenwei on 2017/1/16.
@@ -20,19 +20,22 @@ public class GlPageCatcherWorkThread implements Runnable {
 
     private List<String> activeUrl;
 
+    private Logger logger = LoggerFactory.getLogger(this.getClass());
+
     @Override
     public void run() {
         if (activeUrl == null || activeUrl.isEmpty()) {
             return;
         }
-        List<String> goodsUrls = new ArrayList<>();
+        Set<String> goodsUrls = new HashSet<>();
         for (String url : activeUrl) {
             for (int i = 0; i < 10; i++) {
                 String pageUrl = page(url, i);
+//                logger.debug("{}",pageUrl);
                 if (!CatcherUtil.activeUrl(pageUrl)) {
                     break;
                 }
-                Connection connect = Jsoup.connect(url);
+                Connection connect = Jsoup.connect(pageUrl);
                 try {
                     Connection.Response response = connect.execute();
                     if (response.statusCode() == 200) {
@@ -61,8 +64,9 @@ public class GlPageCatcherWorkThread implements Runnable {
         }
     }
 
-    private void productCarcher(List<String> goodsUrls) {
+    private void productCarcher(Set<String> goodsUrls) {
         if (goodsUrls != null && !goodsUrls.isEmpty()) {
+            logger.info("一共{}个产品链接",goodsUrls.size());
             //交给抓取商品详情的线程处理
             ProductCatcherThread productCatcherThread = new ProductCatcherThread();
             productCatcherThread.setUrls(Lists.newArrayList(goodsUrls));

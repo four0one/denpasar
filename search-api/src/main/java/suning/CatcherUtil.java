@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
  */
 public class CatcherUtil {
 
-    private static Pattern pattern = Pattern.compile("http://product.suning.com/0000000000/(\\d+).html");
+    private static Pattern pattern = Pattern.compile("http://product.suning.com/\\d+/(\\d+).*.html");
 
     public static String genertUrl(String url, String id) {
         String resultUrl = url.replaceAll("#id", id);

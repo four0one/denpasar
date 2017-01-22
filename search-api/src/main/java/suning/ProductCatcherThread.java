@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,7 +24,7 @@ import java.util.regex.Pattern;
  */
 public class ProductCatcherThread implements Runnable {
 
-    private List<String> urls;
+    private LinkedList<String> urls;
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private final String review_url_1 = "http://review.suning" +
@@ -44,17 +45,55 @@ public class ProductCatcherThread implements Runnable {
             return;
         }
         Product tmpProduct = null;
-        for (String url : urls) {
-            tmpProduct = getProduct(url);
+        String reviewUrl, priceUrl,url;
+        for (int i=0;i<urls.size();i++) {
+            tmpProduct = new Product();
+            url = urls.get(i);
+            logger.info("{}", url);
             try {
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                Connection connect = Jsoup.connect(url);
+                Connection.Response response = connect.execute();
+                int statusCode = response.statusCode();
+
+                if (statusCode == 200) {
+                    Document doc = connect.get();
+                    Elements hi_title = doc.select("h1#itemDisplayName");
+                    Element titleEle = hi_title.get(0);
+                    String name = titleEle.text();
+                    tmpProduct.setName(name);
+                    tmpProduct.setUrl(url);
+                    //获取评论数 好评 差评 中评
+                    String productId = CatcherUtil.getProductId(url);
+                    if (!Strings.isNullOrEmpty(productId)) {
+                        tmpProduct.setId(productId);
+                        priceUrl = CatcherUtil.genertUrl(price_inf_url, productId);
+                        priceForProduct(tmpProduct, priceUrl);
+
+                        reviewUrl = CatcherUtil.genertUrl(review_url_1, productId);
+                        int generalRevSuccess = reviewForProductGeneral(tmpProduct, reviewUrl);
+                        if (generalRevSuccess == 1) {
+                            reviewUrl = CatcherUtil.genertUrl(review_url_2, productId);
+                            generalRevSuccess = reviewForProductPackage(tmpProduct, reviewUrl);
+                            if (generalRevSuccess == -1) {
+//                                urls.add(url);
+                                continue;
+                            }
+                        } else if (generalRevSuccess == -1) {
+//                            urls.add(url);
+                            continue;
+                        }
+                        //得到正常的产品信息
+                        ApiConnector.postJson("http://192.168.54.131:9200/suning/product/" + tmpProduct.getId(),
+                                tmpProduct.toString());
+
+                    }
+                }
+            } catch (IOException e) {
+//                logger.error("{}", e);
             }
-            logger.info("{}", tmpProduct);
         }
     }
-
+/*
     public Product getProduct(String url) {
         Product tmpProduct = new Product();
         String reviewUrl, priceUrl;
@@ -74,42 +113,45 @@ public class ProductCatcherThread implements Runnable {
                 String productId = CatcherUtil.getProductId(url);
                 if (!Strings.isNullOrEmpty(productId)) {
                     priceUrl = CatcherUtil.genertUrl(price_inf_url, productId);
+                    priceForProduct(tmpProduct, priceUrl);
+
                     reviewUrl = CatcherUtil.genertUrl(review_url_1, productId);
                     boolean generalRevSuccess = reviewForProduct(tmpProduct, reviewUrl);
                     if (!generalRevSuccess) {
                         reviewUrl = CatcherUtil.genertUrl(review_url_2, productId);
                         reviewForProduct(tmpProduct, reviewUrl);
                     }
-                    priceForProduct(tmpProduct, priceUrl);
 
                 } else {
-                    logger.debug("product id is null!{}", url);
+                    logger.error("product id is null!{}", url);
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("{}",e);
         }
         return tmpProduct;
-    }
+    }*/
 
-    private void priceForProduct(Product tmpProduct, String priceUrl) throws IOException {
+    private void priceForProduct(Product tmpProduct, String priceUrl) {
         String resultJson = ApiConnector.get(priceUrl, null);
         JSONObject jsonObject = JSONObject.parseObject(resultJson);
         JSONArray rsArray = jsonObject.getJSONArray("rs");
         JSONObject rsObject = (JSONObject) rsArray.get(0);
-        tmpProduct.setPrice(rsObject.getDouble("price"));
+        String priceStr = rsObject.getString("price");
+        tmpProduct.setPrice(Strings.isNullOrEmpty(priceStr) ? 0 : Double.parseDouble(priceStr));
     }
 
-    private boolean reviewForProduct(Product tmpProduct, String reviewUrl) throws IOException {
-        String resultJsonP = ApiConnector.get(reviewUrl, null);
-        String resultJson = resultJsonP.substring(1, resultJsonP.length() - 1);
-        JSONObject jsonObject = JSONObject.parseObject(resultJson);
-        if (jsonObject.getInteger("returnCode") == 1) {
+    /**
+     * @param tmpProduct
+     * @param reviewUrl
+     * @return 0 成功 -1 异常
+     */
+    private int reviewForProductPackage(Product tmpProduct, String reviewUrl) {
+        try {
+            String resultJsonP = ApiConnector.get(reviewUrl, null);
+            String resultJson = resultJsonP.substring(1, resultJsonP.length() - 1);
+            JSONObject jsonObject = JSONObject.parseObject(resultJson);
             JSONObject reviewCounts = (JSONObject) jsonObject.getJSONArray("reviewCounts").get(0);
-            Integer totalCount = reviewCounts.getInteger("totalCount");
-            if (totalCount == 0) {
-                return false;
-            }
             tmpProduct.setTotalReview(reviewCounts.getInteger("totalCount"));
             tmpProduct.setAgainCount(reviewCounts.getInteger("againCount"));
             tmpProduct.setBestCount(reviewCounts.getInteger("bestCount"));
@@ -120,9 +162,46 @@ public class ProductCatcherThread implements Runnable {
             tmpProduct.setOneStarCount(reviewCounts.getInteger("oneStarCount"));
             tmpProduct.setPicFlagCount(reviewCounts.getInteger("picFlagCount"));
             tmpProduct.setQualityStar(reviewCounts.getDouble("qualityStar"));
-            return true;
+            return 0;
+        } catch (Exception e) {
+//            logger.error("{}", e);
+            return -1;
         }
-        return false;
+    }
+
+    /**
+     * @param tmpProduct
+     * @param reviewUrl
+     * @return 1 换一个地址再试试 0 成功-1 异常
+     */
+    private int reviewForProductGeneral(Product tmpProduct, String reviewUrl) {
+        try {
+            String resultJsonP = ApiConnector.get(reviewUrl, null);
+            String resultJson = resultJsonP.substring(1, resultJsonP.length() - 1);
+            JSONObject jsonObject = JSONObject.parseObject(resultJson);
+            if (jsonObject.getInteger("returnCode") == 1) {
+                JSONObject reviewCounts = (JSONObject) jsonObject.getJSONArray("reviewCounts").get(0);
+                Integer totalCount = reviewCounts.getInteger("totalCount");
+                if (totalCount == 0) {
+                    return 1;
+                }
+                tmpProduct.setTotalReview(reviewCounts.getInteger("totalCount"));
+                tmpProduct.setAgainCount(reviewCounts.getInteger("againCount"));
+                tmpProduct.setBestCount(reviewCounts.getInteger("bestCount"));
+                tmpProduct.setFiveStarCount(reviewCounts.getInteger("fiveStarCount"));
+                tmpProduct.setFourStarCount(reviewCounts.getInteger("fourStarCount"));
+                tmpProduct.setThreeStarCount(reviewCounts.getInteger("threeStarCount"));
+                tmpProduct.setTwoStarCount(reviewCounts.getInteger("twoStarCount"));
+                tmpProduct.setOneStarCount(reviewCounts.getInteger("oneStarCount"));
+                tmpProduct.setPicFlagCount(reviewCounts.getInteger("picFlagCount"));
+                tmpProduct.setQualityStar(reviewCounts.getDouble("qualityStar"));
+                return 0;
+            }
+            return 1;
+        } catch (Exception e) {
+//            logger.error("{}", e);
+            return -1;
+        }
     }
 
     /**
@@ -148,12 +227,12 @@ public class ProductCatcherThread implements Runnable {
     }
 
     public void setUrls(List<String> urls) {
-        this.urls = Lists.newArrayList(urls);
+        this.urls = Lists.newLinkedList(urls);
     }
 
     public static void main(String[] args) {
-        ProductCatcherThread t = new ProductCatcherThread();
+        /*ProductCatcherThread t = new ProductCatcherThread();
         Product product = t.getProduct("http://product.suning.com/0000000000/945006504.html");
-        System.out.println(product);
+        System.out.println(product);*/
     }
 }

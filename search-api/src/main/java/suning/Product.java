@@ -7,6 +7,8 @@ import com.alibaba.fastjson.JSONObject;
  */
 public class Product {
 
+    private String id;
+
     private String name;
 
     private double price;
@@ -42,6 +44,14 @@ public class Product {
     private int picFlagCount;
     private int totalCount;
     private double qualityStar;
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
 
     public int getOneStarCount() {
         return oneStarCount;
